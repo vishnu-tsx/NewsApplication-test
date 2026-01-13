@@ -4,6 +4,7 @@ import { fetchSpaceNewsArticles } from './spaceNewsApi'
 describe('spaceNewsApi', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
   describe('fetchSpaceNewsArticles', () => {
@@ -39,7 +40,7 @@ describe('spaceNewsApi', () => {
       expect(articles).toHaveLength(2)
     })
 
-    it('should throw error when API response is not ok', async () => {
+    it('should return empty array when API response is not ok', async () => {
       globalThis.fetch = vi.fn(() =>
         Promise.resolve({
           ok: false,
@@ -47,17 +48,19 @@ describe('spaceNewsApi', () => {
         })
       )
 
-      await expect(fetchSpaceNewsArticles()).rejects.toThrow(
-        'HTTP error! status: 404'
-      )
+      const articles = await fetchSpaceNewsArticles()
+
+      expect(articles).toEqual([])
+      expect(console.error).toHaveBeenCalledWith('HTTP error! status: 404')
     })
 
-    it('should handle network errors', async () => {
-      globalThis.fetch = vi.fn(() =>
-        Promise.reject(new Error('Network error'))
-      )
+    it('should return empty array on network errors', async () => {
+      globalThis.fetch = vi.fn(() => Promise.reject(new Error('Network error')))
 
-      await expect(fetchSpaceNewsArticles()).rejects.toThrow('Network error')
+      const articles = await fetchSpaceNewsArticles()
+
+      expect(articles).toEqual([])
+      expect(console.error).toHaveBeenCalled()
     })
 
     it('should return empty array when results is undefined', async () => {
@@ -65,6 +68,19 @@ describe('spaceNewsApi', () => {
         Promise.resolve({
           ok: true,
           json: () => Promise.resolve({}),
+        })
+      )
+
+      const articles = await fetchSpaceNewsArticles()
+
+      expect(articles).toEqual([])
+    })
+
+    it('should return empty array when results is not an array', async () => {
+      globalThis.fetch = vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ results: 'not an array' }),
         })
       )
 
