@@ -53,14 +53,12 @@ describe('spaceNewsApi', () => {
     })
 
     it('should handle network errors', async () => {
-      globalThis.fetch = vi.fn(() =>
-        Promise.reject(new Error('Network error'))
-      )
+      globalThis.fetch = vi.fn(() => Promise.reject(new Error('Network error')))
 
       await expect(fetchSpaceNewsArticles()).rejects.toThrow('Network error')
     })
 
-    it('should return empty array when results is undefined', async () => {
+    it('should throw error when results is not an array', async () => {
       globalThis.fetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
@@ -68,9 +66,22 @@ describe('spaceNewsApi', () => {
         })
       )
 
-      const articles = await fetchSpaceNewsArticles()
+      await expect(fetchSpaceNewsArticles()).rejects.toThrow(
+        'Invalid API response: results must be an array'
+      )
+    })
 
-      expect(articles).toEqual([])
+    it('should throw error when response is not an object', async () => {
+      globalThis.fetch = vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(null),
+        })
+      )
+
+      await expect(fetchSpaceNewsArticles()).rejects.toThrow(
+        'Invalid API response: expected object'
+      )
     })
   })
 })
